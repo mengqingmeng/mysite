@@ -10,11 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
-import os
+import os,sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
@@ -31,13 +31,30 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+   'django.contrib.admin',
+    'registration',  # should be immediately above 'django.contrib.auth'
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'markdown_deux',
+    'django_comments',
+    'notifications',
+    'haystack',
+    'likes',
+    'blog',
+    'comments',
+    'accounts',
+    'social_login',
+    'ckeditor',
+    'ckeditor_uploader',
 ]
+
+SITE_ID = 1
+
+COMMENTS_APP = 'comments'  # for custom django-contrib-comments framework
 
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
@@ -55,7 +72,7 @@ ROOT_URLCONF = 'mysite.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'apps/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -63,6 +80,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'blog.context_processors.sidebar',  # for sidebar information
+                'social_login.context_processors.social_sites',  # for social login
             ],
         },
     },
@@ -108,6 +127,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
 
+
 LANGUAGE_CODE = 'zh-hans'
 
 TIME_ZONE = 'Asia/Shanghai'
@@ -116,8 +136,42 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
+# Markdown settings
+MARKDOWN_DEUX_STYLES = {
+    "default": {
+        "extras": {
+            "code-friendly": None,
+            "fenced-code-blocks": None,
+            "codehilite": None,
+        },
+        "safe_mode": "escape",
+    },
+}
 
+AUTH_USER_MODEL = 'accounts.BlogUser'
+
+# pinax likes
+PINAX_LIKES_LIKABLE_MODELS = {
+    "blog.Article": {},
+    "comments.CommentWithParent": {},  # can override default config settings for each model here
+}
+
+AUTHENTICATION_BACKENDS = [
+    'likes.auth_backends.CanLikeBackend',
+]
+LOGIN_URL = '/login/'
+CKEDITOR_UPLOAD_PATH = "uploads/"
+CKEDITOR_CONFIGS = {
+
+    'default': {
+        'toolbar': 'full',
+        'extraPlugins': ','.join(
+            [
+               'codesnippet'
+            ]),
+    },
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
@@ -127,3 +181,30 @@ STATICFILES =os.path.join(BASE_DIR, 'apps/static')
 STATIC_ROOT = os.path.join(BASE_DIR, 'apps/static') #python manage.py collectstatic floder
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+
+# social user settings
+SOCIALOAUTH_SITES = (
+    ('weibo', 'socialoauth.sites.weibo.Weibo', 'weibo',
+     {
+         'redirect_uri': 'http://zmrenwu.pythonanywhere.com',
+         'client_id': '3072222160',
+         'client_secret': '9b06ed28d7598a91ee72bc38e4f067b2',
+     }
+     ),
+)
+SOCIAL_LOGIN_ERROR_REDIRECT_URL = 'errors/'
+
+# haystack
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'blog.whoosh_cn_backend.WhooshEngine',
+        'PATH': os.path.join(BASE_DIR, 'whoosh_index'),
+    },
+}
+# auto index
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+
+# registration
+ACCOUNT_ACTIVATION_DAYS = 7
+REGISTRATION_AUTO_LOGIN = True
